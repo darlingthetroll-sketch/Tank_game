@@ -1,15 +1,3 @@
-/**
- * TANK MAZE - game.js
- * Single: player vs Bot
- * Multi:  2 người qua Socket.IO — kiến trúc đơn giản, đáng tin cậy
- *
- * Nguyên tắc multiplayer:
- *  - Mỗi client tự mô phỏng toàn bộ (vật lý, đạn, va chạm)
- *  - Mỗi frame gửi vị trí/góc của mình lên server → server relay cho người kia
- *  - Hit detection chỉ do người bắn tính, rồi báo server
- *  - Server không mô phỏng gì — chỉ relay và lưu trạng thái
- */
-
 /* ── DOM ─────────────────────────────────────────────────────────────────── */
 const canvas      = document.getElementById("game")
 const ctx         = canvas.getContext("2d")
