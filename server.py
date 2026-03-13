@@ -257,6 +257,18 @@ def on_rocket_fire(data):
     if not rid or rid not in rooms: return
     broadcast(rid, "rocket_fire", data, exclude=pid)
 
+@socketio.on("purple_bullet_fire")
+def on_purple_bullet_fire(data):
+    pid = request.sid; rid = data.get("room")
+    if not rid or rid not in rooms: return
+    broadcast(rid, "purple_bullet_fire", data, exclude=pid)
+
+@socketio.on("power_clear")
+def on_power_clear(data):
+    pid = request.sid; rid = data.get("room")
+    if not rid or rid not in rooms: return
+    broadcast(rid, "power_clear", data, exclude=pid)
+
 @socketio.on("rocket_pos")
 def on_rocket_pos(data):
     pid = request.sid; rid = data.get("room")

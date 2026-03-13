@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tank Maze</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0e18;--surface:#17172a;--surface2:#1f1f38;--border:#2e2e50;
+  --blue:#4f8ef7;--red:#f25c5c;--green:#3ecf6e;--yellow:#f5c842;
+  --text:#e8e8f0;--text-dim:#7070a0;--text-mute:#3a3a60;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  font-family:'Be Vietnam Pro',Arial,sans-serif;
+  color:var(--text);
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;overflow:hidden;
+}
+/* ── MENU ── */
+#menu{
+  position:fixed;inset:0;z-index:100;
+  display:flex;justify-content:center;align-items:center;
+  background:url("{{ url_for('static', filename='menu_bg.jpg') }}") center/cover no-repeat;
+}
+#menu::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);
+  z-index:0;
+}
+#menu>.menu-card{ position:relative; z-index:1; }
+.menu-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:32px 36px;text-align:center;width:460px;
+  box-shadow:0 8px 48px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.menu-card h1{
+  font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;
+  letter-spacing:4px;color:#fff;
+  text-shadow:0 0 24px rgba(79,142,247,0.6);margin-bottom:4px;
+}
+.menu-card .subtitle{color:var(--text-dim);font-size:13px;margin-bottom:28px;}
+.mode-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}
+.mode-tabs button{
+  flex:1;padding:10px 0;font-size:14px;font-weight:600;
+  font-family:'Be Vietnam Pro',sans-serif;
+  background:var(--surface2);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;
+}
+.mode-tabs button.active{
+  background:var(--blue);color:#fff;border-color:var(--blue);
+  box-shadow:0 0 12px rgba(79,142,247,0.4);
+}
+.mode-tabs button:hover:not(.active){color:var(--text);border-color:#4a4a70;}
+.input-group{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.input-group input{
+  width:100%;padding:12px 14px;font-size:15px;
+  font-family:'Be Vietnam Pro',sans-serif;
+  background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;outline:none;transition:border-color .2s;
+}
+.input-group input:focus{border-color:var(--blue);}
+.input-group input::placeholder{color:var(--text-mute);}
+/* multi panel */
+#multiPanel{display:none;flex-direction:column;gap:10px;margin-bottom:16px;}
+#multiPanel.visible{display:flex;}
+#singlePanel{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+#singlePanel.hidden{display:none;}
+.btn-row{display:flex;gap:8px;}
+#roomId{
+  width:100%;padding:12px 14px;font-size:16px;
+  font-family:'Orbitron',sans-serif;letter-spacing:5px;text-align:center;
+  text-transform:uppercase;
+  background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;outline:none;
+}
+#roomId:focus{border-color:var(--yellow);}
+#roomId::placeholder{font-family:'Be Vietnam Pro',sans-serif;letter-spacing:0;font-size:13px;}
+#roomStatus{
+  font-size:13px;min-height:40px;padding:8px 12px;
+  background:var(--surface2);border-radius:8px;border:1px solid var(--border);
+  line-height:1.6;text-align:center;color:var(--text-dim);
+}
+/* buttons */
+.btn-primary{
+  width:100%;padding:14px;font-size:16px;font-weight:700;
+  font-family:'Be Vietnam Pro',sans-serif;
+  background:linear-gradient(135deg,#3a7bd5,#2563eb);
+  color:#fff;border:none;border-radius:10px;cursor:pointer;
+  transition:all .2s;margin-top:4px;
+  box-shadow:0 4px 16px rgba(37,99,235,0.4);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,0.5);}
+.btn-secondary{
+  flex:1;padding:12px;font-size:14px;font-weight:600;
+  font-family:'Be Vietnam Pro',sans-serif;
+  border:none;border-radius:8px;cursor:pointer;transition:all .2s;
+}
+.btn-create{background:linear-gradient(135deg,#059669,#10b981);color:#fff;}
+.btn-join{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;}
+.btn-secondary:hover{transform:translateY(-1px);filter:brightness(1.1);}
+.controls-note{
+  margin-top:18px;font-size:12px;color:var(--text-mute);
+  border-top:1px solid var(--border);padding-top:14px;
+  display:flex;justify-content:center;gap:16px;flex-wrap:wrap;
+}
+/* ── SETTINGS PANEL ── */
+.settings-panel{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+  text-align:left;
+}
+.settings-title{
+  font-size:11px;font-weight:700;color:var(--text-mute);letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:2px;
+}
+.setting-row{display:flex;flex-direction:column;gap:5px;}
+.setting-label{font-size:12px;font-weight:600;color:var(--text-dim);}
+.slider-wrap{display:flex;align-items:center;gap:8px;}
+.slider-hint{font-size:11px;color:var(--text-mute);white-space:nowrap;}
+.setting-slider{
+  flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+  background:var(--border);outline:none;cursor:pointer;
+}
+.setting-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--blue);cursor:pointer;box-shadow:0 0 6px rgba(79,142,247,0.6);
+}
+.slider-val-row{font-size:11px;color:var(--text-dim);text-align:center;}
+.mode-choice-row{display:flex;gap:6px;}
+.mode-choice{
+  flex:1;display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  cursor:pointer;transition:all .2s;
+}
+.mode-choice input{display:none;}
+.mode-choice.active{border-color:var(--blue);background:rgba(79,142,247,0.08);}
+.mode-choice-icon{font-size:18px;flex-shrink:0;}
+.mode-choice-text{display:flex;flex-direction:column;gap:1px;}
+.mode-choice-text b{font-size:12px;color:var(--text);}
+.mode-choice-text small{font-size:10px;color:var(--text-mute);}
+.score-limit-pick{display:flex;gap:5px;flex-wrap:wrap;}
+.score-btn{
+  flex:1;padding:6px 4px;font-size:13px;font-weight:700;
+  background:var(--surface);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;
+}
+.score-btn:hover{border-color:#4a4a70;color:var(--text);}
+
+/* ── CHAT ── */
+#chatBox{
+  position:fixed;bottom:20px;right:20px;z-index:300;
+  width:280px;display:none;flex-direction:column;gap:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+#chatBox.visible{display:flex;}
+#chatHeader{
+  padding:8px 14px;font-size:12px;font-weight:700;
+  color:var(--text-dim);background:var(--surface2);
+  border-bottom:1px solid var(--border);letter-spacing:1px;
+  display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+}
+#chatHeader::before{content:"💬";}
+#chatLog{
+  height:180px;overflow-y:auto;padding:10px 10px 6px;
+  display:flex;flex-direction:column;gap:6px;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+#chatLog:empty::after{
+  content:"Nhập tin nhắn để chat...";
+  color:var(--text-mute);font-size:12px;text-align:center;
+  margin:auto;
+}
+.chat-msg{display:flex;flex-direction:column;gap:2px;max-width:90%;}
+.chat-me{align-self:flex-end;align-items:flex-end;}
+.chat-them{align-self:flex-start;align-items:flex-start;}
+.chat-name{font-size:10px;color:var(--text-mute);padding:0 4px;}
+.chat-bubble{
+  padding:6px 10px;border-radius:10px;font-size:13px;line-height:1.4;
+  word-break:break-word;max-width:220px;
+}
+.chat-me .chat-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:3px;}
+.chat-them .chat-bubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px;}
+#chatInputRow{
+  display:flex;border-top:1px solid var(--border);
+}
+#chatInput{
+  flex:1;padding:9px 12px;font-size:13px;
+  font-family:'Be Vietnam Pro',sans-serif;
+  background:var(--surface2);color:var(--text);
+  border:none;outline:none;
+}
+#chatInput::placeholder{color:var(--text-mute);}
+#chatSend{
+  padding:0 14px;background:var(--blue);color:#fff;
+  border:none;cursor:pointer;font-size:16px;
+  transition:background .15s;
+}
+#chatSend:hover{background:#3b7de8;}
+/* badge khi có tin mới và chat đang thu nhỏ */
+#chatBadge{
+  display:none;background:#ef4444;color:#fff;
+  font-size:10px;font-weight:700;border-radius:99px;
+  padding:1px 6px;margin-left:auto;
+}
+
+#game-ui{display:flex;flex-direction:column;align-items:center;gap:8px;}
+#game-ui.hidden{display:none;}
+/* HUD */
+.hud{
+  width:100%;max-width:1080px;display:flex;align-items:center;gap:8px;
+  padding:0 2px;
+}
+.hud-card{
+  flex:1;display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:8px 12px;position:relative;overflow:hidden;
+  min-width:120px;
+}
+.hud-avatar{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;
+}
+.hud-info{flex:1;min-width:0;}
+.hud-name{
+  font-size:13px;font-weight:700;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;
+}
+.hud-bar-wrap{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.hud-bar{
+  height:100%;border-radius:4px;transition:width .3s ease;
+}
+.hud-stats{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.hud-hp-num{
+  font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;
+}
+.hud-kills{font-size:11px;color:var(--text-dim);}
+.hud-vs{
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;
+  color:var(--text-mute);flex-shrink:0;
+}
+/* chat time */
+.chat-time{
+  font-size:9px;color:var(--text-mute);margin-left:6px;font-weight:400;
+}
+/* fixed overlays */
+#btnBack{
+  position:fixed;top:14px;left:14px;z-index:200;
+  padding:8px 14px;font-size:18px;
+  background:var(--surface);color:var(--text);
+  border:1px solid var(--border);border-radius:8px;cursor:pointer;
+  transition:all .2s;display:none;
+}
+#btnBack:hover{background:var(--surface2);}
+#roomDisplay{
+  position:fixed;top:14px;right:14px;z-index:200;
+  padding:6px 14px;font-size:13px;
+  background:var(--surface);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:8px;display:none;
+  font-family:'Orbitron',sans-serif;letter-spacing:2px;
+}
+/* canvas */
+#game-wrap{position:relative;display:inline-block;}
+#game{display:block;border:2px solid var(--border);border-radius:4px;}
+#btnFullscreen{
+  position:absolute;top:6px;right:8px;
+  background:rgba(0,0,0,0.5);border:1px solid var(--border);
+  color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;
+  cursor:pointer;z-index:10;
+}
+#btnFullscreen:hover{background:rgba(255,255,255,0.15);}
+/* Fullscreen mode */
+#game-ui.fs-mode{
+  position:fixed;inset:0;z-index:999;background:#111;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+}
+#game-ui.fs-mode .controls-hint{color:#888;}
+
+/* controls hint */
+.controls-hint{
+  font-size:12px;color:var(--text-mute);display:flex;gap:20px;flex-wrap:wrap;
+  justify-content:center;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ MENU ═══════════ -->
+<div id="menu">
+  <div class="menu-card">
+    <h1>Tăng Thủ</h1>
+    <p class="subtitle">Bắn đến khi ra</p>
+
+    <div class="mode-tabs">
+      <button id="btnSingle" class="active">Một người</button>
+      <button id="btnMulti">Nhiều người</button>
+    </div>
+
+    <div class="input-group">
+      <input id="playerName" type="text" placeholder="Tên của bạn..." maxlength="14" autocomplete="off">
+    </div>
+
+    <!-- Single player -->
+    <div id="singlePanel">
+      <div class="setting-row" style="margin-bottom:10px">
+        <label class="setting-label">🧱 Độ phức tạp mê cung</label>
+        <div class="slider-wrap">
+          <span class="slider-hint">Trống</span>
+          <input type="range" id="singleComplexity" min="0" max="100" value="100" class="setting-slider">
+          <span class="slider-hint">Rắc rối</span>
+        </div>
+        <div class="slider-val-row">
+          <span id="singleComplexityLabel">Mê cung đầy đủ 🏰</span>
+        </div>
+      </div>
+    </div>
+    <button id="btnStart" class="btn-primary">🎮 Bắt đầu</button>
+
+    <!-- Multiplayer panel -->
+    <div id="multiPanel">
+
+      <!-- Bước 1: chọn vai trò (hiện mặc định) -->
+      <div id="mpStep1">
+        <div class="btn-row">
+          <button id="btnCreate" class="btn-secondary btn-create">＋ Tạo phòng</button>
+          <button id="btnJoin"   class="btn-secondary btn-join">→ Vào phòng</button>
+        </div>
+        <input id="roomId" type="text" placeholder="Nhập mã phòng..." maxlength="5" autocomplete="off">
+      </div>
+
+      <!-- Bước 2: HOST — sau khi tạo phòng (ẩn mặc định) -->
+      <div id="mpHost" style="display:none">
+        <div id="roomCode" style="
+          font-family:'Orbitron',sans-serif;font-size:28px;letter-spacing:8px;
+          color:#fff;text-align:center;padding:10px 0 4px;text-shadow:0 0 16px rgba(79,142,247,0.7)
+        ">----</div>
+        <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:8px">
+          ← Chia mã cho người chơi khác (tối đa 4 người)
+        </div>
+        <div id="waitingList" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px;min-height:24px;"></div>
+
+        <!-- ── SETTINGS ── -->
+        <div class="settings-panel">
+          <div class="settings-title">⚙ Cài đặt phòng</div>
+
+          <!-- Độ khó mê cung -->
+          <div class="setting-row">
+            <label class="setting-label">🧱 Độ phức tạp mê cung</label>
+            <div class="slider-wrap">
+              <span class="slider-hint">Trống</span>
+              <input type="range" id="settingComplexity" min="0" max="100" value="100" class="setting-slider">
+              <span class="slider-hint">Rắc rối</span>
+            </div>
+            <div class="slider-val-row">
+              <span id="complexityLabel">Mê cung đầy đủ 🏰</span>
+            </div>
+          </div>
+
+          <!-- Chế độ chơi -->
+          <div class="setting-row">
+            <label class="setting-label">🎯 Chế độ chơi</label>
+            <div class="mode-choice-row">
+              <label class="mode-choice active" id="modeChoiceInfinite">
+                <input type="radio" name="gameMode" value="infinite" checked>
+                <span class="mode-choice-icon">∞</span>
+                <span class="mode-choice-text">
+                  <b>Vô hạn</b>
+                  <small>Bắn thoải mái, không kết thúc</small>
+                </span>
+              </label>
+              <label class="mode-choice" id="modeChoiceScore">
+                <input type="radio" name="gameMode" value="score">
+                <span class="mode-choice-icon">🏆</span>
+                <span class="mode-choice-text">
+                  <b>Tính điểm</b>
+                  <small>Ai đủ điểm trước thắng</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Giới hạn điểm (ẩn khi infinite) -->
+          <div class="setting-row" id="scoreLimitRow" style="display:none">
+            <label class="setting-label">🎖 Điểm để thắng</label>
+            <div class="score-limit-pick">
+              <button class="score-btn" data-v="5">5</button>
+              <button class="score-btn" data-v="10" style="background:var(--blue);color:#fff">10</button>
+              <button class="score-btn" data-v="15">15</button>
+              <button class="score-btn" data-v="20">20</button>
+              <button class="score-btn" data-v="30">30</button>
+            </div>
+            <input type="hidden" id="settingScoreLimit" value="10">
+          </div>
+        </div>
+
+        <button id="btnBegin" class="btn-primary" disabled style="opacity:.45;cursor:not-allowed;margin-top:8px">
+          ⏳ Chờ người chơi khác vào...
+        </button>
+      </div>
+
+      <!-- Bước 2: JOINER — sau khi nhập mã (ẩn mặc định) -->
+      <div id="mpJoiner" style="display:none">
+        <div style="font-size:14px;color:var(--text-dim);text-align:center;padding:6px 0 4px">
+          ✅ Đã vào phòng!
+        </div>
+        <div id="waitingListJoiner" style="
+          display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+          margin:8px 0;min-height:28px;
+        "></div>
+        <div style="color:var(--text-mute);font-size:12px;text-align:center">
+          Chờ chủ phòng bắt đầu...
+        </div>
+      </div>
+
+      <div id="roomStatus" style="margin-top:8px">Tạo phòng hoặc nhập mã để tham gia</div>
+    </div>
+
+    <div class="controls-note">
+      <span>WASD / ↑↓←→ Di chuyển</span>
+      <span>SPACE Bắn</span>
+      <span>L1 Ngắm laser</span>
+      <span>L2 Laser homing</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<button id="btnBack">←</button>
+<div id="roomDisplay"></div>
+
+<div id="game-ui" class="hidden">
+  <div class="hud" id="hud-dynamic">
+    <!-- JS sẽ render động tùy số người chơi -->
+  </div>
+
+  <div id="game-wrap">
+    <canvas id="game"></canvas>
+    <button id="btnFullscreen">⛶ Toàn màn hình</button>
+  </div>
+
+  <div class="controls-hint">
+    <span>WASD / Mũi tên: Di chuyển</span>
+    <span>SPACE: Bắn</span>
+    <span>Thu thập L1/L2 để có kỹ năng đặc biệt</span>
+  </div>
+</div>
+
+<!-- ═══════════ CHAT ═══════════ -->
+<div id="chatBox">
+  <div id="chatHeader">
+    CHAT
+    <span id="chatBadge"></span>
+    <span id="chatToggleIcon" style="margin-left:auto;font-size:10px;color:var(--text-mute)">▼</span>
+  </div>
+  <div id="chatBody">
+    <div id="chatLog"></div>
+    <div id="chatInputRow">
+      <input id="chatInput" type="text" placeholder="Nhắn gì đó..." maxlength="100" autocomplete="off">
+      <button id="chatSend">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- socket.io CDN — phải load trước game.js -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/game.js"></script>
+
+<script>
+// Show btnBack when game-ui becomes visible
+const _ui  = document.getElementById("game-ui")
+const _btn = document.getElementById("btnBack")
+const _chat = document.getElementById("chatBox")
+let chatCollapsed = false
+let chatUnread = 0
+
+new MutationObserver(()=>{
+  const inGame = !_ui.classList.contains("hidden")
+  _btn.style.display = inGame ? "block" : "none"
+  // Chỉ hiện chat khi đang chơi multiplayer
+  if (!inGame) { _chat.classList.remove("visible") }
+}).observe(_ui,{attributes:true,attributeFilter:["class"]})
+
+// Hàm showChat được gọi từ game.js khi vào multiplayer game
+window.showChatBox = function() {
+  _chat.classList.add("visible")
+}
+
+// Toggle collapse chat
+document.getElementById("chatHeader").addEventListener("click", () => {
+  chatCollapsed = !chatCollapsed
+  document.getElementById("chatBody").style.display = chatCollapsed ? "none" : ""
+  document.getElementById("chatToggleIcon").textContent = chatCollapsed ? "▲" : "▼"
+  if (!chatCollapsed) {
+    chatUnread = 0
+    document.getElementById("chatBadge").style.display = "none"
+    document.getElementById("chatBadge").textContent = ""
+    // Scroll to bottom
+    const log = document.getElementById("chatLog")
+    if (log) log.scrollTop = log.scrollHeight
+  }
+})
+
+// Patch appendChatMsg để hiện badge khi chat bị collapse
+const _origAppend = window.appendChatMsg
+// Badge logic được xử lý trong game.js qua hook
+window._onNewChatMsg = function() {
+  if (chatCollapsed) {
+    chatUnread++
+    const badge = document.getElementById("chatBadge")
+    badge.style.display = "inline-block"
+    badge.textContent = chatUnread > 9 ? "9+" : chatUnread
+  }
+}
+
+
+
+// ── Settings interactions ──
+const complexitySlider = document.getElementById("settingComplexity")
+const complexityLabel  = document.getElementById("complexityLabel")
+const COMPLEXITY_LABELS = [
+  [0,  "Bình nguyên trống 🏜"],
+  [20, "Thoáng đãng 🌿"],
+  [40, "Vừa phải 🌆"],
+  [60, "Nhiều ngõ ngách 🏘"],
+  [80, "Mê cung phức tạp 🌀"],
+  [95, "Mê cung đầy đủ 🏰"],
+]
+function updateComplexityLabel(v) {
+  const match = [...COMPLEXITY_LABELS].reverse().find(([t])=>v>=t)
+  if (complexityLabel) complexityLabel.textContent = match ? match[1] : ""
+}
+if (complexitySlider) {
+  complexitySlider.addEventListener("input", () => updateComplexityLabel(+complexitySlider.value))
+  updateComplexityLabel(100)
+}
+
+// Single player complexity slider
+const singleComplexitySlider = document.getElementById("singleComplexity")
+const singleComplexityLabel  = document.getElementById("singleComplexityLabel")
+function updateSingleComplexityLabel(v) {
+  const match = [...COMPLEXITY_LABELS].reverse().find(([t])=>v>=t)
+  if (singleComplexityLabel) singleComplexityLabel.textContent = match ? match[1] : ""
+}
+if (singleComplexitySlider) {
+  singleComplexitySlider.addEventListener("input", () => updateSingleComplexityLabel(+singleComplexitySlider.value))
+  updateSingleComplexityLabel(100)
+}
+
+// Game mode radio
+document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    const isScore = radio.value === "score"
+    document.getElementById("scoreLimitRow").style.display = isScore ? "" : "none"
+    document.getElementById("modeChoiceInfinite").classList.toggle("active", !isScore)
+    document.getElementById("modeChoiceScore").classList.toggle("active", isScore)
+  })
+})
+document.querySelectorAll(".mode-choice").forEach(el => {
+  el.addEventListener("click", () => {
+    const radio = el.querySelector("input[type=radio]")
+    if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change")) }
+  })
+})
+
+// Score limit buttons
+const scoreLimitInput = document.getElementById("settingScoreLimit")
+document.querySelectorAll(".score-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".score-btn").forEach(b => {
+      b.style.background = ""; b.style.color = ""
+    })
+    btn.style.background = "var(--blue)"; btn.style.color = "#fff"
+    if (scoreLimitInput) scoreLimitInput.value = btn.dataset.v
+  })
+})
+</script>
+
+</body>
+</html>
