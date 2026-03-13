@@ -1,0 +1,22 @@
+body{
+margin:0;
+background:white;
+}
+
+canvas{
+display:block;
+margin:auto;
+background:white;
+border:1px solid black;
+}
+
+#uiPanel{
+position:absolute;
+top:20px;
+right:20px;
+background:white;
+padding:10px 20px;
+border:2px solid black;
+font-weight:bold;
+}
+
